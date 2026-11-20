@@ -1,0 +1,29 @@
+services:
+  api:
+    build: ./backend
+    ports: ["8000:8000"]
+    environment:
+      AUTH_DB_PATH: /app/data/auth.sqlite3
+      UPLOAD_DIR: /app/data/uploads
+    env_file:
+      - path: ./backend/.env
+        required: false
+    volumes:
+      - api-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://127.0.0.1:8000/api/v1}
+    ports: ["5173:80"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  api-data:
